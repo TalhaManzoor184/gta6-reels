@@ -1,0 +1,112 @@
+name: Daily GTA 6 reel
+
+on:
+  schedule:
+    # GitHub starts cron jobs late (sometimes hours) or skips them, so try three times before the
+    # 7:00 PM PKT slot: 2:17 PM, 3:47 PM and 5:23 PM PKT. Each run checks data/history.json and does
+    # nothing if today's slot already has a reel, so only one video goes out per day.
+    - cron: "17 9 * * *"
+    - cron: "47 10 * * *"
+    - cron: "23 12 * * *"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "test = sample script, free voice, no keys, no upload · no-upload = real reel (Gemini), not uploaded · upload-test = sample uploaded PRIVATE to YouTube (checks YouTube keys) · full = real reel, public at PUBLISH_TIME · publish-now = real reel, public immediately · facebook-test = sample saved as Facebook DRAFT"
+        type: choice
+        options: [test, no-upload, upload-test, full, publish-now, facebook-test]
+        default: test
+
+permissions:
+  contents: write # to commit data/history.json
+
+concurrency:
+  group: daily-reel
+  cancel-in-progress: false
+
+env:
+  # Change these in Settings → Secrets and variables → Actions → Variables (or edit here).
+  UPLOAD_MODE: ${{ vars.UPLOAD_MODE || 'schedule' }}
+  PUBLISH_TIME: ${{ vars.PUBLISH_TIME || '19:00' }}
+  PUBLISH_UTC_OFFSET: ${{ vars.PUBLISH_UTC_OFFSET || '5' }}
+  IMAGE_PROVIDER: ${{ vars.IMAGE_PROVIDER || 'gemini' }}
+  TTS_PROVIDER: ${{ vars.TTS_PROVIDER || 'gemini' }}
+  GEMINI_VOICE: ${{ vars.GEMINI_VOICE || 'Fenrir' }}
+  KOKORO_VOICE: ${{ vars.KOKORO_VOICE || 'am_michael' }}
+  FACEBOOK_ENABLED: ${{ vars.FACEBOOK_ENABLED || 'true' }}
+  GEMINI_TEXT_MODEL: ${{ vars.GEMINI_TEXT_MODEL }}
+  GEMINI_IMAGE_MODEL: ${{ vars.GEMINI_IMAGE_MODEL }}
+  GEMINI_TTS_MODEL: ${{ vars.GEMINI_TTS_MODEL }}
+
+jobs:
+  reel:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: render/requirements.txt
+
+      - name: Install tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg espeak-ng
+          pip install -q -r render/requirements.txt
+          npm ci
+
+      - name: Cache free voice model
+        uses: actions/cache@v4
+        with:
+          path: render/models
+          key: kokoro-v1.0-int8
+
+      - name: Make reel
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          FACEBOOK_PAGE_ID: ${{ secrets.FACEBOOK_PAGE_ID }}
+          FACEBOOK_PAGE_TOKEN: ${{ secrets.FACEBOOK_PAGE_TOKEN }}
+          MODE: ${{ github.event_name == 'schedule' && 'scheduled' || inputs.mode }}
+        run: |
+          case "$MODE" in
+            test)          npm run reel -- --sample --tts=kokoro --images=off --no-upload ;;
+            no-upload)     npm run reel -- --no-upload ;;
+            upload-test)   UPLOAD_MODE=private npm run reel -- --sample --tts=kokoro --images=off --no-facebook ;;
+            facebook-test) FACEBOOK_DRAFT=true npm run reel -- --sample --tts=kokoro --images=off --facebook-only ;;
+            publish-now)   UPLOAD_MODE=public npm run reel ;;
+            full)          npm run reel ;;
+            *)             npm run reel -- --if-slot-free ;;
+          esac
+
+      - name: Save the video (download from this run's Summary page)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reel
+          path: |
+            out/*/reel.mp4
+            out/*/script.json
+            out/*/research.md
+          if-no-files-found: ignore
+          retention-days: 3
+
+      - name: Commit history
+        if: always()
+        run: |
+          git config user.name "gta6-reels bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/history.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Reel history: $(date -u +%F)"
+          for i in 1 2 3; do git pull --rebase -q && git push -q && exit 0; sleep 5; done
+          exit 1

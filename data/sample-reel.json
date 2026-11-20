@@ -1,0 +1,15 @@
+{
+  "title": "GTA 6 Broke YouTube Before It Even Launched 🤯",
+  "description": "GTA 6 videos racked up tens of billions of views before the game was even out. Here are the numbers behind the hype.",
+  "tags": ["GTA 6", "GTA VI", "GTA 6 news", "Rockstar", "gaming news", "YouTube records", "Shorts"],
+  "topic": "GTA 6 YouTube view records before launch",
+  "format": "facts",
+  "hook": "GTA 6 BROKE THE INTERNET",
+  "scenes": [
+    { "line": "GTA 6 broke the internet before it even launched.", "onscreen": "BEFORE LAUNCH", "visual": "Aerial night shot of a tropical neon coastal city with palm-lined boulevards" },
+    { "line": "Pre-launch GTA 6 videos alone pulled in over forty billion views on YouTube.", "onscreen": "VIEWS", "counter": { "to": 40000000000, "suffix": "+" }, "visual": "Dark room with hundreds of glowing phone screens floating in the air" },
+    { "line": "And all GTA videos combined? More than nine hundred billion.", "onscreen": "ALL GTA VIDEOS", "counter": { "to": 900, "suffix": " BILLION" }, "visual": "Generic unbranded sports car racing down a coastal highway at sunset" },
+    { "line": "That's over a hundred views for every single person on Earth.", "onscreen": "100+ PER PERSON", "visual": "Planet Earth from space at night covered in glowing city lights" }
+  ],
+  "sources": ["YouTube via bundle.social, November 2026"]
+}

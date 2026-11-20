@@ -1,0 +1,25 @@
+{
+  "name": "gta6-reels",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Daily copyright-safe GTA 6 news/facts reels: Gemini research + script + visuals + voice, rendered with ffmpeg, uploaded to YouTube Shorts and Facebook Reels",
+  "scripts": {
+    "reel": "tsx src/pipeline/run.ts",
+    "reel:sample": "tsx src/pipeline/run.ts --sample --tts=kokoro --images=off --no-upload",
+    "auth:youtube": "tsx src/scripts/get-refresh-token.ts",
+    "auth:facebook": "tsx src/scripts/facebook-auth.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "22.10.2",
+    "tsx": "4.19.2",
+    "typescript": "5.6.3"
+  },
+  "dependencies": {
+    "@google/genai": "2.28.0",
+    "dotenv": "16.4.5",
+    "googleapis": "186.0.0",
+    "zod": "3.25.76"
+  }
+}

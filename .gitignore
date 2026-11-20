@@ -1,0 +1,6 @@
+node_modules/
+out/
+.env
+*.log
+render/models/
+__pycache__/

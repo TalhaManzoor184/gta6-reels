@@ -1,0 +1,25 @@
+name: Cleanup old videos
+
+# Keeps GitHub storage small: run artifacts older than 3 days are deleted.
+# Posted videos stay on YouTube/Facebook.
+on:
+  schedule:
+    - cron: "41 21 * * *" # 2:41 AM PKT
+  workflow_dispatch:
+
+permissions:
+  actions: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Delete artifacts older than 3 days
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cutoff=$(date -u -d '3 days ago' +%Y-%m-%dT%H:%M:%SZ)
+          gh api "repos/${{ github.repository }}/actions/artifacts?per_page=100" --paginate \
+            --jq ".artifacts[] | select(.created_at < \"$cutoff\") | .id" |
+          while read -r id; do gh api -X DELETE "repos/${{ github.repository }}/actions/artifacts/$id" && echo "deleted $id"; done || true
