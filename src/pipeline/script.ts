@@ -87,10 +87,25 @@ Search the web and find ONE strong topic for this format, with the newest inform
 Return research notes: the topic, 4–8 concrete verified facts with numbers/dates, and the source (outlet + URL) for each.
 For "theory": describe a real fan theory being discussed and say clearly it is unconfirmed.
 Do not invent anything. If something is a rumour, say so.`;
-  return generate(
-    (model) => ai().models.generateContent({ model, contents: prompt, config: { tools: [{ googleSearch: {} }], temperature: 0.7 } }),
-    "research",
-  );
+  try {
+    return await generate(
+      (model) => ai().models.generateContent({ model, contents: prompt, config: { tools: [{ googleSearch: {} }], temperature: 0.7 } }),
+      "research",
+    );
+  } catch (err) {
+    if (!shouldFallBack(err)) throw err;
+    // Search grounding has its own (small) free quota. Fall back to well-established facts only.
+    console.warn("  Google Search grounding unavailable (quota); researching from stable, well-known facts instead.");
+    if (process.env.GITHUB_ACTIONS) console.log("::warning title=No web search::Search grounding quota exhausted; reel uses well-known facts, no fresh news.");
+    const offline = `You prepare notes for a GTA 6 (Grand Theft Auto VI) Shorts channel. Web search is unavailable today.
+Pick ONE evergreen topic for the format "${format === "news" ? "facts" : format}" that is NOT in this list:
+${done}
+Use only facts that were officially announced by Rockstar Games / Take-Two or widely and consistently reported
+(setting, cities, characters' public roles, trailer records, announced release timing, the GTA series' history and records).
+Do NOT include anything that may have changed recently, rumours as facts, or numbers you are not sure about.
+Return the topic, 4–8 facts, and for each the outlet or official source it is known from.`;
+    return generate((model) => ai().models.generateContent({ model, contents: offline, config: { temperature: 0.6 } }), "research (offline)");
+  }
 }
 
 /** Step 2: turn the notes into a reel script (strict JSON). */
