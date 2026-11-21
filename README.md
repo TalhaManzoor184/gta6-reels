@@ -1,6 +1,6 @@
 # gta6-reels — daily GTA 6 news & facts reels (copyright-safe)
 
-Every day, GitHub Actions makes one vertical reel (15–30 s) about GTA 6 and uploads it to
+Every day, GitHub Actions makes **two** vertical reels (15–30 s) about GTA 6 and uploads it to
 YouTube Shorts, and to Facebook Reels if the Facebook secrets are set.
 
 ```
@@ -11,7 +11,7 @@ Gemini TTS (Fenrir)     →  English voiceover  (free Kokoro voice is the automa
 render/render.py        →  9:16 video: Ken Burns backgrounds, neon text, counters, word captions,
                            progress bar, FOLLOW card, fan-channel disclaimer
 ffmpeg                  →  voice + original generated beat, loudness for Shorts
-YouTube / Facebook      →  scheduled for 7:00 PM Pakistan time
+YouTube / Facebook      →  scheduled for 1:00 PM and 8:00 PM Pakistan time
 ```
 
 ## Copyright safety
@@ -50,12 +50,12 @@ mode **no-upload** — Gemini research + AI images + Gemini voice. Video artifac
 mode **upload-test** — sample reel YouTube par **private** upload hoti hai.
 
 ### 5. Daily automation
-Kuch nahi karna — schedule khud chalta hai (7:00 PM PKT par public). Ya mode **full** / **publish-now**.
+Kuch nahi karna — schedule khud chalta hai: roz 2 reels, 1:00 PM aur 8:00 PM PKT par public. Ya mode **full** (agle khali slot mein) / **publish-now**.
 
 ## Settings (Actions → Variables, optional)
 | Variable | Default | Meaning |
 |---|---|---|
-| `PUBLISH_TIME` | `19:00` | Pakistan time jab reel public ho |
+| `PUBLISH_TIMES` | `13:00,20:00` | Pakistan time jab reels public hon (comma se jitne chahein; har time ke liye cron bhi add karein) |
 | `UPLOAD_MODE` | `schedule` | `schedule` / `private` / `public` |
 | `IMAGE_PROVIDER` | `gemini` | `off` = sirf neon backgrounds (free, koi image quota nahi) |
 | `TTS_PROVIDER` | `gemini` | `kokoro` = free natural voice, `espeak` = robot (test) |

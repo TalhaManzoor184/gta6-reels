@@ -9,14 +9,27 @@ export function youtubeClient() {
   return google.youtube({ version: "v3", auth });
 }
 
-/** Next PUBLISH_TIME (in PUBLISH_UTC_OFFSET local time), PUBLISH_DELAY_DAYS from now, as ISO UTC. */
-export function publishAtIso(now = new Date()): string {
-  const [hh, mm] = config.publishTime.split(":").map(Number);
+/** Upcoming publish slots (every PUBLISH_TIMES entry, next 2 days), soonest first, as ISO UTC. */
+export function upcomingSlots(now = new Date()): string[] {
   const offsetMs = config.publishUtcOffset * 3600_000;
   const local = new Date(now.getTime() + offsetMs);
-  let target = Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate() + config.publishDelayDays, hh, mm) - offsetMs;
-  while (target < now.getTime() + 15 * 60_000) target += 24 * 3600_000; // YouTube rejects past times
-  return new Date(target).toISOString();
+  const out: number[] = [];
+  for (let day = 0; day < 3; day++)
+    for (const t of config.publishTimes) {
+      const [hh, mm] = t.split(":").map(Number);
+      const at = Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate() + day, hh, mm || 0) - offsetMs;
+      if (at >= now.getTime() + 20 * 60_000) out.push(at); // YouTube rejects past times; leave render time
+    }
+  return [...new Set(out)].sort((a, b) => a - b).map((ms) => new Date(ms).toISOString());
+}
+
+/**
+ * The slot this reel goes into: the soonest upcoming slot that has no reel yet.
+ * withinHours limits how far ahead a scheduled run may fill (keeps news fresh); null = no free slot in range.
+ */
+export function nextFreeSlot(taken: Set<string>, withinHours = Infinity, now = new Date()): string | null {
+  const limit = now.getTime() + withinHours * 3600_000;
+  return upcomingSlots(now).find((s) => !taken.has(s) && Date.parse(s) <= limit) ?? null;
 }
 
 export const DISCLAIMER = "Fan-made news & facts channel. Not affiliated with or endorsed by Rockstar Games or Take-Two Interactive. No game footage is used.";
@@ -26,9 +39,10 @@ export function fullDescription(script: ReelScript): string {
   return `${script.description}${src}\n\n${DISCLAIMER}\n\n#GTA6 #GTAVI #Shorts #Gaming #GTA6News`.slice(0, 4900);
 }
 
-export async function uploadShort(file: string, script: ReelScript): Promise<{ videoId: string; publishAt?: string }> {
+export async function uploadShort(file: string, script: ReelScript, slot?: string): Promise<{ videoId: string; publishAt?: string }> {
   const yt = youtubeClient();
-  const publishAt = config.uploadMode === "schedule" ? publishAtIso() : undefined;
+  const publishAt = config.uploadMode === "schedule" ? slot : undefined;
+  if (config.uploadMode === "schedule" && !publishAt) throw new Error("No publish slot given for a scheduled upload.");
   const res = await yt.videos.insert({
     part: ["snippet", "status"],
     notifySubscribers: true,

@@ -2,16 +2,19 @@ name: Daily GTA 6 reel
 
 on:
   schedule:
-    # GitHub starts cron jobs late (sometimes hours) or skips them, so try three times before the
-    # 7:00 PM PKT slot: 2:17 PM, 3:47 PM and 5:23 PM PKT. Each run checks data/history.json and does
-    # nothing if today's slot already has a reel, so only one video goes out per day.
-    - cron: "17 9 * * *"
-    - cron: "47 10 * * *"
-    - cron: "23 12 * * *"
+    # Two reels a day: 1:00 PM and 8:00 PM PKT (PUBLISH_TIMES). GitHub starts cron jobs late or
+    # skips them, so there are three tries before each slot. Each run fills the soonest empty slot
+    # in the next 8 hours (checked against data/history.json) or does nothing.
+    - cron: "17 3 * * *"   #  8:17 AM PKT  → 1 PM reel
+    - cron: "47 5 * * *"   # 10:47 AM PKT  → 1 PM reel (retry)
+    - cron: "7 7 * * *"    # 12:07 PM PKT  → 1 PM reel (last try)
+    - cron: "17 10 * * *"  #  3:17 PM PKT  → 8 PM reel
+    - cron: "47 12 * * *"  #  5:47 PM PKT  → 8 PM reel (retry)
+    - cron: "7 14 * * *"   #  7:07 PM PKT  → 8 PM reel (last try)
   workflow_dispatch:
     inputs:
       mode:
-        description: "test = sample script, free voice, no keys, no upload · no-upload = real reel (Gemini), not uploaded · upload-test = sample uploaded PRIVATE to YouTube (checks YouTube keys) · full = real reel, public at PUBLISH_TIME · publish-now = real reel, public immediately · facebook-test = sample saved as Facebook DRAFT"
+        description: "test = sample script, free voice, no keys, no upload · no-upload = real reel (Gemini), not uploaded · upload-test = sample uploaded PRIVATE to YouTube (checks YouTube keys) · full = real reel, scheduled into the next empty slot · publish-now = real reel, public immediately · facebook-test = sample saved as Facebook DRAFT"
         type: choice
         options: [test, no-upload, upload-test, full, publish-now, facebook-test]
         default: test
@@ -26,7 +29,7 @@ concurrency:
 env:
   # Change these in Settings → Secrets and variables → Actions → Variables (or edit here).
   UPLOAD_MODE: ${{ vars.UPLOAD_MODE || 'schedule' }}
-  PUBLISH_TIME: ${{ vars.PUBLISH_TIME || '19:00' }}
+  PUBLISH_TIMES: ${{ vars.PUBLISH_TIMES || '13:00,20:00' }}
   PUBLISH_UTC_OFFSET: ${{ vars.PUBLISH_UTC_OFFSET || '5' }}
   IMAGE_PROVIDER: ${{ vars.IMAGE_PROVIDER || 'gemini' }}
   TTS_PROVIDER: ${{ vars.TTS_PROVIDER || 'gemini' }}

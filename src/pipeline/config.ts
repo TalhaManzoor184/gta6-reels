@@ -40,11 +40,16 @@ export const config = {
   ttsFallbackToKokoro: opt("TTS_FALLBACK_KOKORO", "true") === "true",
 
   // Upload
-  /** "schedule" = private now, public at PUBLISH_TIME · "private" = you publish · "public" = public now. */
+  /** "schedule" = private now, public at its PUBLISH_TIMES slot · "private" = you publish · "public" = public now. */
   uploadMode: opt("UPLOAD_MODE", "schedule") as "schedule" | "private" | "public",
-  publishTime: opt("PUBLISH_TIME", "19:00"),
+  /** Daily publish times (local time at PUBLISH_UTC_OFFSET), comma-separated. One reel per time. */
+  publishTimes: opt("PUBLISH_TIMES", opt("PUBLISH_TIME", "13:00,20:00"))
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean),
+  /** A scheduled run only fills a slot starting within this many hours, so the news stays fresh. */
+  slotWindowHours: Number(opt("SLOT_WINDOW_HOURS", "8")),
   publishUtcOffset: Number(opt("PUBLISH_UTC_OFFSET", "5")),
-  publishDelayDays: Number(opt("PUBLISH_DELAY_DAYS", "0")),
   facebookGraphVersion: opt("FACEBOOK_GRAPH_VERSION", "v26.0"),
 
   python: opt("PYTHON", "python3"),

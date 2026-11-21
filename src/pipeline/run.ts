@@ -8,7 +8,7 @@ import { ReelScript } from "./reel";
 import { buildTimeline, renderReel } from "./render";
 import { writeReel } from "./script";
 import { voiceReel } from "./tts";
-import { publishAtIso, uploadShort } from "./upload";
+import { nextFreeSlot, uploadShort } from "./upload";
 
 /**
  * One reel: research → script → images → voice → render → upload.
@@ -42,16 +42,19 @@ async function main() {
   const history = await loadHistory();
 
   // Scheduled runs fire several times a day (GitHub often starts cron late or skips it).
-  // Only the first run that finds the next publish slot empty makes a reel.
+  // Each run fills the soonest empty publish slot in the next few hours, or does nothing.
+  const taken = new Set(history.map((h) => h.publishAt).filter((s): s is string => Boolean(s)));
+  let slot: string | undefined;
   if (args.has("if-slot-free")) {
-    const slot = publishAtIso();
-    const taken = history.find((h) => h.publishAt === slot);
-    if (taken) {
-      console.log(`Slot ${slot} already has "${taken.title}". Nothing to do.`);
-      if (gh) console.log(`::notice title=Already scheduled::${slot} has ${clean(taken.title)}`);
+    slot = nextFreeSlot(taken, config.slotWindowHours) ?? undefined;
+    if (!slot) {
+      console.log(`No empty slot (${config.publishTimes.join(", ")}) in the next ${config.slotWindowHours}h. Nothing to do.`);
+      if (gh) console.log(`::notice title=Nothing to do::every slot in the next ${config.slotWindowHours}h already has a reel`);
       return;
     }
     console.log(`Slot ${slot} is free; making a reel for it.`);
+  } else if (config.uploadMode === "schedule") {
+    slot = nextFreeSlot(taken) ?? undefined;
   }
 
   // 1. Research + script
@@ -105,7 +108,7 @@ async function main() {
     console.log(`Facebook: Reel ${fb.videoId} ${fb.state}`);
     if (gh) console.log(`::notice title=Facebook test::Reel ${fb.videoId} ${fb.state}`);
   } else {
-    const { videoId, publishAt } = await uploadShort(mp4, script);
+    const { videoId, publishAt } = await uploadShort(mp4, script, slot);
     console.log(`YouTube: https://youtube.com/shorts/${videoId}${publishAt ? ` (goes public ${publishAt})` : ""}`);
     if (gh) console.log(`::notice title=YouTube::https://youtube.com/shorts/${videoId}${publishAt ? ` public at ${publishAt}` : ""}`);
 
