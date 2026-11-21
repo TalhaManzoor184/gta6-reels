@@ -57,8 +57,8 @@ async function gemini(text: string, rawPath: string): Promise<void> {
 
 type Silence = { start: number; end: number };
 
-async function findSilences(file: string): Promise<Silence[]> {
-  const { stderr } = await run("ffmpeg", ["-hide_banner", "-i", file, "-af", "silencedetect=noise=-38dB:d=0.15", "-f", "null", "-"], {
+async function findSilences(file: string, minPause = 0.15): Promise<Silence[]> {
+  const { stderr } = await run("ffmpeg", ["-hide_banner", "-i", file, "-af", `silencedetect=noise=-38dB:d=${minPause}`, "-f", "null", "-"], {
     maxBuffer: 16 * 1024 * 1024,
   });
   const out: Silence[] = [];
@@ -116,7 +116,12 @@ async function voiceWithGemini(lines: string[], outWavs: string[]): Promise<Voic
   const raw = path.join(path.dirname(outWavs[0]), "voice.raw.wav");
   await gemini(lines.join("\n<short pause>\n"), raw);
   const total = await durationOf(raw);
-  const cuts = lines.length > 1 ? chooseCuts(await findSilences(raw), lines, total) : [];
+  // Fast voices leave short pauses: try shorter minimum pause lengths before giving up.
+  let cuts: number[] | null = lines.length > 1 ? null : [];
+  for (const minPause of [0.15, 0.1, 0.07]) {
+    if (cuts) break;
+    cuts = chooseCuts(await findSilences(raw, minPause), lines, total);
+  }
   if (!cuts) {
     await fs.rm(raw, { force: true });
     return null;

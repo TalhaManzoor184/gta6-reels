@@ -101,8 +101,9 @@ Do not invent anything. If something is a rumour, say so.`;
 Pick ONE evergreen topic for the format "${format === "news" ? "facts" : format}" that is NOT in this list:
 ${done}
 Use only facts that were officially announced by Rockstar Games / Take-Two or widely and consistently reported
-(setting, cities, characters' public roles, trailer records, announced release timing, the GTA series' history and records).
-Do NOT include anything that may have changed recently, rumours as facts, or numbers you are not sure about.
+(setting, the state of Leonida and its places, trailer view records, the GTA series' history, sales records of earlier games).
+NEVER mention release dates, release windows, delays, platforms, prices, editions or "coming soon": those change and your
+knowledge may be out of date. Do NOT include anything that may have changed recently, rumours as facts, or numbers you are not sure about.
 Return the topic, 4–8 facts, and for each the outlet or official source it is known from.`;
     return generate((model) => ai().models.generateContent({ model, contents: offline, config: { temperature: 0.6 } }), "research (offline)");
   }
