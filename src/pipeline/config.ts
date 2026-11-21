@@ -48,7 +48,7 @@ export const config = {
     .map((s) => s.trim())
     .filter(Boolean),
   /** A scheduled run only fills a slot starting within this many hours, so the news stays fresh. */
-  slotWindowHours: Number(opt("SLOT_WINDOW_HOURS", "8")),
+  slotWindowHours: Number(opt("SLOT_WINDOW_HOURS", "16")),
   publishUtcOffset: Number(opt("PUBLISH_UTC_OFFSET", "5")),
   facebookGraphVersion: opt("FACEBOOK_GRAPH_VERSION", "v26.0"),
 
